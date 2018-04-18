@@ -15,7 +15,6 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/bndr/gopencils"
 	"github.com/docopt/docopt-go"
 	"github.com/op/go-logging"
 )
@@ -85,8 +84,8 @@ Usage:
 Options:
   -h --help          Show this help.
   -v --version       Show version
-  -u --user=<user>   Stash username.
-  -p --pass=<pass>   Stash password. You want to set this flag in .ashrc file.
+  --user=<user>      Stash user.
+  --token=<token>    Stash token.
   -d                 Show descriptions for the listed PRs.
   -l=<count>         Number of activities to retrieve. [default: 1000]
   -w                 Ignore whitespaces
@@ -149,8 +148,8 @@ func main() {
 	logger.Info("cmd line args are read from %s", configPath)
 	logger.Debug("cmd line args: %s", CmdLineArgs(fmt.Sprintf("%s", rawArgs)))
 
-	if args["--user"] == nil || args["--pass"] == nil {
-		fmt.Println("--user and --pass should be specified.")
+	if args["--user"] == nil || args["--token"] == nil {
+		fmt.Println("--user and --token should be specified.")
 		os.Exit(1)
 	}
 
@@ -163,10 +162,8 @@ func main() {
 	uri.base = strings.TrimSuffix(uri.base, "/")
 
 	user := args["--user"].(string)
-	pass := args["--pass"].(string)
-
-	auth := gopencils.BasicAuth{user, pass}
-	api := Api{uri.base, auth, nil}
+	token := args["--token"].(string)
+	api := Api{uri.base, user, token}
 	project := Project{&api, uri.project}
 	repo := project.GetRepo(uri.repo)
 

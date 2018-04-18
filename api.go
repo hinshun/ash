@@ -3,18 +3,15 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"net/http"
-	"net/http/cookiejar"
-	"net/url"
 	"time"
 
 	"github.com/bndr/gopencils"
 )
 
 type Api struct {
-	URL         string
-	Auth        gopencils.BasicAuth
-	AuthCookies []*http.Cookie
+	URL   string
+	User  string
+	Token string
 }
 
 type Project struct {
@@ -39,31 +36,7 @@ func (u UnixTimestamp) AsTime() time.Time {
 }
 
 func (api Api) GetResource() *gopencils.Resource {
-	return gopencils.Api(fmt.Sprintf("%s/rest", api.URL), &api.Auth)
-}
-
-func (api Api) authViaWeb() ([]*http.Cookie, error) {
-	if api.AuthCookies != nil {
-		return api.AuthCookies, nil
-	}
-
-	jar, _ := cookiejar.New(nil)
-	client := http.Client{Jar: jar}
-
-	_, err := client.PostForm(api.URL+"/j_stash_security_check",
-		url.Values{
-			"j_username": {api.Auth.Username},
-			"j_password": {api.Auth.Password},
-		})
-
-	if err != nil {
-		return nil, err
-	}
-
-	hostURL, _ := url.Parse(api.URL)
-	api.AuthCookies = jar.Cookies(hostURL)
-
-	return api.AuthCookies, nil
+	return gopencils.Api(fmt.Sprintf("%s/rest", api.URL))
 }
 
 func (api Api) DoGet(
@@ -106,7 +79,8 @@ func (api Api) doRequest(
 	res *gopencils.Resource,
 	doFunc func() (*gopencils.Resource, error),
 ) error {
-	res.SetHeader("X-Atlassian-Token", "no-check")
+	res.SetHeader("X-Auth-User", api.User)
+	res.SetHeader("X-Auth-Token", api.Token)
 	resp, err := doFunc()
 	if err != nil {
 		return err
